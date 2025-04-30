@@ -1,15 +1,15 @@
-import scala.collection.mutable
 import java.security.MessageDigest
-import scala.collection.{AbstractIterable, AbstractIterator}
-
-import scala.collection.parallel.CollectionConverters.*
+import scala.collection.mutable
 import java.util.concurrent.{ExecutorService, Executors}
+import scala.util.{Failure, Random, Success, Try, Using}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.*
 
 // Instructor Example Times
 // Sequential: Found 83 passwords of length 4 in 921.411 seconds
 // Parallel:   Found 83 passwords of length 4 in 151.388 seconds (8-core CPU)
+
+given ExecutionContext = ExecutionContext.global
 
 @main def crackPasswords(): Unit = {
   // load password hashes from the starter pack
@@ -21,9 +21,15 @@ import scala.concurrent.duration.*
   val symbols = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
   val fullCharset = lowercase + uppercase + digits + symbols
   // try brute forcing all passwords of a specific length n
-  val length = 1
-  val passwords = bruteForceCollection(fullCharset, length, hashes)
-  println(s"One Character Passwords: ${passwords.mkString(", ")}")
+  val length = 4
+  //  val passwords = bruteForceCollection(fullCharset, length, hashes)
+  //  println(s"One Character Passwords: ${passwords.mkString(", ")}")
+
+  println(s"4 Character Passwords: ")
+  val (parTime, parAnswer) = timeIt(bruteForceLoopPar(fullCharset, length, hashes))
+  println()
+  println(s"Took ${parTime} ms")
+
   // note that the getCombination function could also be used to combine words . . .
   val words = Vector("correct", "horse", "battery", "staple")
   println(getCombination(words)(2)(BigInt(7)).mkString)
@@ -58,6 +64,31 @@ def bruteForceLoop(charset: String, length: Int, hashes: Set[String]): Iterable[
     val password = makeCombination(cursor).mkString
     // if this password's hash is in the set, add the password to the output list of passwords
     if hashes contains sha256(password) then passwords.addOne(password)
+    // increment the cursor
+    cursor += 1
+  }
+  // convert the buffer to an immutable vector and return it
+  passwords.toVector
+}
+
+// brute force try every order of chars in charset with replacement using a for loop
+// NOTE: this one might be an easier starting point for futures and doesn't have issues with Int.MaxValue
+def bruteForceLoopPar(charset: String, length: Int, hashes: Set[String]): Unit = {
+  val start = BigInt(0)
+  val stop = BigInt(charset.length).pow(length)
+  // create a partially applied version of get combination with symbols and length filled in
+  val makeCombination = getCombination(charset)(length)
+  // create a buffer to hold passwords that have been identified
+  val passwords = mutable.ArrayBuffer[String]()
+  // loop from the first possible password with this charset to the last checking each
+  var cursor = start
+  while cursor < stop do {
+    // identify the password that goes with this particular number
+    val password = Future {makeCombination(cursor).mkString}
+    // if this password's hash is in the set, print password
+
+    val result = Await.result(password, Duration.Inf)
+    if hashes contains sha256(result) then print(s"$result ")
     // increment the cursor
     cursor += 1
   }
