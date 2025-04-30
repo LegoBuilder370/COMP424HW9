@@ -1,6 +1,7 @@
 import java.security.MessageDigest
 import scala.collection.mutable
 import java.util.concurrent.{ExecutorService, Executors}
+import scala.annotation.tailrec
 import scala.util.{Failure, Random, Success, Try, Using}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.*
@@ -10,6 +11,8 @@ import scala.concurrent.duration.*
 // Parallel:   Found 83 passwords of length 4 in 151.388 seconds (8-core CPU)
 
 given ExecutionContext = ExecutionContext.global
+
+val NUMCORES = 8;
 
 @main def crackPasswords(): Unit = {
   // load password hashes from the starter pack
@@ -25,14 +28,18 @@ given ExecutionContext = ExecutionContext.global
   //  val passwords = bruteForceCollection(fullCharset, length, hashes)
   //  println(s"One Character Passwords: ${passwords.mkString(", ")}")
 
-  println(s"4 Character Passwords: ")
+  /*println(s"4 Character Passwords: ")
   val (parTime, parAnswer) = timeIt(bruteForceLoopPar(fullCharset, length, hashes))
   println()
-  println(s"Took ${parTime} ms")
+  println(s"Took ${parTime} ms")*/
 
+  Await.ready(parallelRun(fullCharset, 4, hashes), Duration.Inf)
+
+  println()
+  println("Finished Running")
   // note that the getCombination function could also be used to combine words . . .
-  val words = Vector("correct", "horse", "battery", "staple")
-  println(getCombination(words)(2)(BigInt(7)).mkString)
+  /*val words = Vector("correct", "horse", "battery", "staple")
+  println(getCombination(words)(2)(BigInt(7)).mkString)*/
 }
 
 // brute force try every order of chars in charset with replacement using collection methods
@@ -94,6 +101,31 @@ def bruteForceLoopPar(charset: String, length: Int, hashes: Set[String]): Unit =
   }
   // convert the buffer to an immutable vector and return it
   passwords.toVector
+}
+
+def parallelRun(charset: String, length: Int, hashes: Set[String]): Future[Unit] = Future {
+  val results = for i <- 0 until NUMCORES yield (
+    bruteForceMod(charset.substring((charset.length/NUMCORES + 1)*i, Math.min((charset.length/NUMCORES + 1)*(i+1), charset.length)), charset, length-1, hashes)
+    )
+
+  //println("set up futures, awating results:")
+
+  for i <- results do Await.ready(i, Duration.Inf)
+}
+
+def bruteForceMod(beginset: String, charset: String, length: Int, hashes: Set[String]): Future[Unit] = Future {
+  //println(beginset)
+
+  for i <- beginset do recursiveFor(i.toString, charset, length, hashes)
+}
+
+def recursiveFor(stringSoFar: String, charset: String, length: Int, hashes: Set[String]): Unit = {
+  if (length == 0) {
+    if hashes contains sha256(stringSoFar) then print(s"$stringSoFar ")
+  }
+  else {
+    for char <- charset do recursiveFor(stringSoFar + char, charset, length-1, hashes)
+  }
 }
 
 // compute the SHA-256 hash of the string using Java's message digest tools
