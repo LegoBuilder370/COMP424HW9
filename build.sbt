@@ -6,3 +6,5 @@ lazy val root = (project in file("."))
   .settings(
     name := "COMP 424 HW 9"
   )
+
+libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
