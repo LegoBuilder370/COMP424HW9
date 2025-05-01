@@ -28,13 +28,14 @@ val NUMCORES = 7;
   //  val passwords = bruteForceCollection(fullCharset, length, hashes)
   //  println(s"One Character Passwords: ${passwords.mkString(", ")}")
 
-  /*println(s"4 Character Passwords: ")
-  val (parTime, parAnswer) = timeIt(bruteForceLoopPar(fullCharset, length, hashes))
-  println()
-  println(s"Took ${parTime} ms")*/
+  //digitsOnly(length, hashes)
 
-  val usedCharset = lowercase + uppercase + digits
-  Await.ready(parallelRunSI(usedCharset, digits, 7, hashes), Duration.Inf)
+  println(s"${length} Character Passwords: ")
+//  val (parTime, parAnswer) = timeIt(bruteForceLoopPar(digits, length, hashes))
+//  println()
+//  println(s"Took ${parTime} ms")
+
+  Await.ready(parallelRun(fullCharset, length, hashes), Duration.Inf)
 
   println()
   println("Finished Running")
@@ -42,6 +43,23 @@ val NUMCORES = 7;
   /*val words = Vector("correct", "horse", "battery", "staple")
   println(getCombination(words)(2)(BigInt(7)).mkString)*/
 }
+
+def digitsOnly(length: Int, hashes: Set[String]): Unit = {
+
+  val x = (Math.pow(10,length)).toInt
+  for i <- 69696969 to x do {
+    if (hashes.contains(sha256((i).toString))){
+      print(i + "\n")
+    }
+  }
+}
+
+
+
+
+
+
+
 
 // brute force try every order of chars in charset with replacement using collection methods
 def bruteForceCollection(charset: String, length: Int, hashes: Set[String]): Iterable[String] = {
