@@ -34,7 +34,7 @@ val NUMCORES = 7;
   println(s"Took ${parTime} ms")*/
 
   val usedCharset = lowercase + uppercase + digits
-  Await.ready(parallelRunSI(usedCharset, digits, 2, hashes), Duration.Inf)
+  Await.ready(parallelRunSI(usedCharset, digits, 7, hashes), Duration.Inf)
 
   println()
   println("Finished Running")
@@ -137,10 +137,10 @@ def recursiveFor(stringSoFar: String, charset: String, length: Int, hashes: Set[
 // only passwords of the form SI
 def parallelRunSI(charset: String, digitset: String, length: Int, hashes: Set[String]): Future[Unit] = Future {
 
-  val otherResult = bruteForceModSI(charset.substring((charset.length / (NUMCORES - 1)) * (NUMCORES-1), Math.min((charset.length / (NUMCORES - 1)) * (NUMCORES), charset.length)), charset, digitset , length - 1, hashes)
+  val otherResult = bruteForceModSI(charset.substring((charset.length / (NUMCORES - 1)) * (NUMCORES - 1), Math.min((charset.length / (NUMCORES - 1)) * (NUMCORES), charset.length)), charset, digitset, length - 1, hashes)
 
-  val results = for i <- 0 until NUMCORES-1 yield (
-    bruteForceModSI(charset.substring((charset.length/(NUMCORES-1))*i, Math.min((charset.length/(NUMCORES-1))*(i+1), charset.length)), charset, digitset, length-1, hashes)
+  val results = for i <- 0 until NUMCORES - 1 yield (
+    bruteForceModSI(charset.substring((charset.length / (NUMCORES - 1)) * i, Math.min((charset.length / (NUMCORES - 1)) * (i + 1), charset.length)), charset, digitset, length - 1, hashes)
     )
   //println("set up futures, awating results:")
   //val otherResult = bruteForceMod(charset.substring((charset.length / (NUMCORES - 1)) * (NUMCORES-1), Math.min((charset.length / (NUMCORES - 1)) * (NUMCORES), charset.length)), charset, length - 1, hashes)
@@ -149,11 +149,9 @@ def parallelRunSI(charset: String, digitset: String, length: Int, hashes: Set[St
 }
 
 def bruteForceModSI(beginset: String, charset: String, digitset: String, length: Int, hashes: Set[String]): Future[Unit] = Future {
-  println(beginset)
+  //println(beginset)
 
-  for char <- charset do {
-    recursiveForSI(char.toString, charset, digitset, length, hashes, digitset.contains(char))
-  }
+  for i <- beginset do recursiveForSI(i.toString, charset, digitset, length, hashes, digitset.contains(i))
 }
 
 def recursiveForSI(stringSoFar: String, charset: String, digitset: String, length: Int, hashes: Set[String], seenInt: Boolean): Unit = {
