@@ -12,7 +12,7 @@ import scala.concurrent.duration.*
 
 given ExecutionContext = ExecutionContext.global
 
-val NUMCORES = 8;
+val NUMCORES = 7;
 
 @main def crackPasswords(): Unit = {
   // load password hashes from the starter pack
@@ -33,7 +33,8 @@ val NUMCORES = 8;
   println()
   println(s"Took ${parTime} ms")*/
 
-  Await.ready(parallelRun(fullCharset, 4, hashes), Duration.Inf)
+  val usedCharset = lowercase + uppercase + digits
+  Await.ready(parallelRun(usedCharset, 5, hashes), Duration.Inf)
 
   println()
   println("Finished Running")
@@ -104,17 +105,20 @@ def bruteForceLoopPar(charset: String, length: Int, hashes: Set[String]): Unit =
 }
 
 def parallelRun(charset: String, length: Int, hashes: Set[String]): Future[Unit] = Future {
-  val results = for i <- 0 until NUMCORES yield (
-    bruteForceMod(charset.substring((charset.length/NUMCORES + 1)*i, Math.min((charset.length/NUMCORES + 1)*(i+1), charset.length)), charset, length-1, hashes)
+
+  val otherResult = bruteForceMod(charset.substring((charset.length / (NUMCORES - 1)) * (NUMCORES-1), Math.min((charset.length / (NUMCORES - 1)) * (NUMCORES), charset.length)), charset, length - 1, hashes)
+
+  val results = for i <- 0 until NUMCORES-1 yield (
+    bruteForceMod(charset.substring((charset.length/(NUMCORES-1))*i, Math.min((charset.length/(NUMCORES-1))*(i+1), charset.length)), charset, length-1, hashes)
     )
-
   //println("set up futures, awating results:")
-
+  //val otherResult = bruteForceMod(charset.substring((charset.length / (NUMCORES - 1)) * (NUMCORES-1), Math.min((charset.length / (NUMCORES - 1)) * (NUMCORES), charset.length)), charset, length - 1, hashes)
+  Await.ready(otherResult, Duration.Inf)
   for i <- results do Await.ready(i, Duration.Inf)
 }
 
 def bruteForceMod(beginset: String, charset: String, length: Int, hashes: Set[String]): Future[Unit] = Future {
-  //println(beginset)
+  println(beginset)
 
   for i <- beginset do recursiveFor(i.toString, charset, length, hashes)
 }
